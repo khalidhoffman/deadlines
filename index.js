@@ -198,12 +198,7 @@ server.register(Bell, function (err) {
         // This will net you the clientId and the clientSecret needed.
         // Also be sure to pass the redirect_uri as well. It must be in the list of "AUTHORIZED REDIRECT URIS"
         clientId: '***REMOVED***',
-        clientSecret: '***REMOVED***',
-        location: 'http://khalidhoffman.solutions',
-        providerParams: {
-            //redirect_uri: server.info.uri + '/deadlines'
-            redirect_uri: 'http://khalidhoffman.solutions/deadlines'
-        }
+        clientSecret: '***REMOVED***'
     });
 
     // Use the 'twitter' authentication strategy to protect the
