@@ -199,6 +199,7 @@ server.register(Bell, function (err) {
         // Also be sure to pass the redirect_uri as well. It must be in the list of "AUTHORIZED REDIRECT URIS"
         clientId: '***REMOVED***',
         clientSecret: '***REMOVED***',
+        location: 'http://khalidhoffman.solutions',
         providerParams: {
             //redirect_uri: server.info.uri + '/deadlines'
             redirect_uri: 'http://khalidhoffman.solutions/deadlines'
@@ -215,7 +216,6 @@ server.register(Bell, function (err) {
         path: '/login',
         config: {
             auth: 'google',
-            location: 'http://khalidhoffman.solutions',
             handler: function (request, reply) {
                 var credentials = request.auth.credentials;
                 User.findOneAndUpdate(
