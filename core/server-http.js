@@ -350,17 +350,6 @@ var server = http.createServer(
         response.setHeader('Access-Control-Allow-Origin', googleAuthRedirectURI);
 
         switch (pathObj.pathname) {
-            case '/deadlines':
-            case '/deadlines/':
-                //console.log('[/deadlines]request.url: ', pathObj);
-                //console.log('[/deadlines]request.headers: ', request.headers);
-
-                if (pathObj.query['code']) {
-                    handleGoogleCredentials(request, response);
-                } else {
-                    handlePageRequest(request, response);
-                }
-                break;
             case '/login':
             case '/login/':
                 handleLoginRequest(request,response);
@@ -370,11 +359,12 @@ var server = http.createServer(
                 handleDataRequest(request,response);
                 break;
             case '/':
-                response.writeHead(302, {
-                    "Content-Type": "text/html",
-                    'Location': 'http://khalidhoffman.info'
-                });
-                response.end();
+                if (pathObj.query['code']) {
+                    handleGoogleCredentials(request, response);
+                } else {
+                    handlePageRequest(request, response);
+                }
+                break;
                 break;
             default :
                 handleFileRequest(request, response);

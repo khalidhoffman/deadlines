@@ -35,6 +35,7 @@ define(['namespace', 'utils', 'backbone', 'config', 'text!views/html/sidebar.htm
                     TodoList.sort();
                 } else{
                     TodoList.comparator = 'dueDate';
+                    // TODO fix need for double sort
                     TodoList.sort();
                     TodoList.sort();
                 }
