@@ -343,34 +343,32 @@ function handleLoginRequest(request, response){
     response.end();
 }
 
-var server = http.createServer(
-    function (request, response) {
-        var path = String(request.url),
-        pathObj = url.parse(path, true);
-        response.setHeader('Access-Control-Allow-Origin', googleAuthRedirectURI);
+var server = http.createServer( function (request, response) {
+    var path = String(request.url),
+    pathObj = url.parse(path, true);
+    response.setHeader('Access-Control-Allow-Origin', googleAuthRedirectURI);
 
-        switch (pathObj.pathname) {
-            case '/login':
-            case '/login/':
-                handleLoginRequest(request,response);
-                break;
-            case '/tasklist':
-            case '/tasklist/':
-                handleDataRequest(request,response);
-                break;
-            case '/':
-                if (pathObj.query['code']) {
-                    handleGoogleCredentials(request, response);
-                } else {
-                    handlePageRequest(request, response);
-                }
-                break;
-                break;
-            default :
-                handleFileRequest(request, response);
-                break;
-        }
+    switch (pathObj.pathname) {
+        case '/login':
+        case '/login/':
+            handleLoginRequest(request,response);
+            break;
+        case '/tasklist':
+        case '/tasklist/':
+            handleDataRequest(request,response);
+            break;
+        case '/':
+            if (pathObj.query['code']) {
+                handleGoogleCredentials(request, response);
+            } else {
+                handlePageRequest(request, response);
+            }
+            break;
+            break;
+        default :
+            handleFileRequest(request, response);
+            break;
+    }
 });
-server.portNumber = portNumber;
 module.exports = server;
 

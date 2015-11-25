@@ -1,6 +1,6 @@
 {
   "name": "Deadlines",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A web app for managing deadlines at Different Perspective",
   "main": "index.js",
   "scripts": {
@@ -20,7 +20,7 @@
     "passport-google": "^0.3.0"
   },
   "engines": {
-    "node": "0.12.7"
+    "node": "5.1.0"
   },
   "repository": {
     "type": "git",

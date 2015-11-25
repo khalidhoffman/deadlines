@@ -19,9 +19,7 @@ module.exports = {
         unsecure: process.env.PORT || config.ports.unsecure
     },
     scriptsList : config.scripts.map(function(path, index, arr){
-        return new Script({
-            src : path
-        });
+        return new Script({ src : path });
     }),
     stylesheetList : config.stylesheets.map(function(path, index, arr){
         return new CSS(path);

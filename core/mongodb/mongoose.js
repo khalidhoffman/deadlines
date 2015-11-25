@@ -1,5 +1,6 @@
 var Task = null,
-    User = null;
+    User = null,
+    crendentials = require('./credentials');
 
 /**
  *
@@ -9,9 +10,10 @@ module.exports.connect = function(isDev){
     var mongoose = require('mongoose'),
         isDevelopment = isDev || require('os').hostname().toLowerCase().indexOf('kah')>-1;
 
-    var username = '***REMOVED***',
-        password = '***REMOVED***';
+    var username = crendentials.username,
+        password = crendentials.password;
 
+    console.log('connecting to mongodb');
     mongoose.connect('mongodb://'+username+':'+password+'@***REMOVED***');
 
     var db = mongoose.connection;
