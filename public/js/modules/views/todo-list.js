@@ -15,9 +15,9 @@ define(['namespace', 'backbone', 'config', 'utils', '../models/todo-list', './to
                     });
                 }
 
-                //this.listenTo(this.collection, 'sync', function(){
-                //    Utils.makeToast('Saved.');
-                //});
+                this.listenTo(this.collection, 'sync', function(){
+                    Utils.makeToast('Saved.');
+                });
 
                 this.listenTo(this.collection, 'sort render', function(){
                     this.render(arguments);
