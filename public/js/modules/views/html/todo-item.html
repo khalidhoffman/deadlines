@@ -15,13 +15,13 @@
             Details
         </div>
         <div class="ui action input fluid wrap-time-input">
-            <input name="time" class="time-input duedate" value="<%= model.getFormattedTime() %>" />
+            <input name="time" class="time-input duedate" value="<%= model.getFormattedDueTime() %>" />
             <div class="ui icon button btn-set-time">
                 <i class="wait icon"></i>
             </div>
         </div>
         <div class="ui action input fluid wrap-date-input">
-            <input name="date" class="date-input duedate" value="<%= model.getFormattedDate() %>" />
+            <input name="date" class="date-input duedate" value="<%= model.getFormattedDueDay() %>" />
             <div class="ui icon button  btn-set-date">
                 <i class="calendar icon"></i>
             </div>
@@ -36,11 +36,6 @@
                 <div class="four wide column">
                     <div class="ui icon button toggle-options">
                         <i class="options icon"></i>
-                    </div>
-                </div>
-                <div class="four wide column">
-                    <div class="ui icon button btn-save">
-                        <i class="cloud icon"></i>
                     </div>
                 </div>
             </div>

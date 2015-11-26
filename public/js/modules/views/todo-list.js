@@ -3,7 +3,6 @@ define(['namespace', 'backbone', 'config', 'utils', '../models/todo-list', './to
 
         var TodoListView = Backbone.View.extend({
             initialize : function(){
-                this.taskViews = [];
                 if (this.collection.isInitialized){
                     console.log('list initiated. rendering...');
                     this.hideLoadScreen();
@@ -14,51 +13,60 @@ define(['namespace', 'backbone', 'config', 'utils', '../models/todo-list', './to
                         this.hideLoadScreen();
                         this.render();
                     });
-                };
-                this.listenTo(this.collection, 'sync', function(){
-                    Utils.makeToast('Saved.');
-                });
-                this.listenTo(this.collection, 'render', function(){
+                }
+
+                //this.listenTo(this.collection, 'sync', function(){
+                //    Utils.makeToast('Saved.');
+                //});
+
+                this.listenTo(this.collection, 'sort render', function(){
                     this.render(arguments);
                 });
+
                 this.$list = this.$('#list');
                 //this.$list.sortable();
+
                 return this;
             },
             events : {
                 'click .btn-add' : 'addItem'
             },
             log : function(){
-                console.log(arguments);
+                console.log.apply(null, arguments);
             },
             hideLoadScreen : function(){
                 Backbone.$('body').addClass('initialized');
                 //this.$el.resize();
-            },
-            addItem : function(){
-                var newTask = this.collection.create();
-                var newTaskView = new TodoItemView( {
-                    model: newTask
-                } );
-                this.saveTaskView(newTaskView);
-                this.$list.append(newTaskView.render().$el);
                 return this;
             },
-            saveTaskView : function(taskViewObj){
-                this.taskViews.push(taskViewObj);
+            addItem : function(evt){
+                if(evt && evt.preventDefault) evt.preventDefault();
+                var newTask = this.collection.create();
+                //var newTask = this.collection.create(),
+                //    newTaskView = new TodoItemView( {
+                //    model: newTask
+                //} );
+                //newTask.view = newTaskView;
+                //this.$list.append(newTaskView.render().$el);
+                //this.collection.sort();
+                this.once('view:rendered', function(){
+                    Utils.scrollTo(newTask.view.$el, {
+                        offset : -12
+                    });
+                });
+                return this;
             },
             render : function(){
                 this.$list.html('');
-                this.taskViews = [];
                 var container = document.createDocumentFragment(),
                     $container = Backbone.$(container),
                     self = this;
-                this.collection.sort();
+
                 _.forEach(this.collection.models, function(model, index, arr){
                     var newTaskView = new TodoItemView( {
                         model: model
                     } );
-                    self.saveTaskView(newTaskView);
+                    model.view = newTaskView;
                     if(Config.isSortAscending){
                         $container.append(newTaskView.render().$el);
                     } else{
@@ -66,6 +74,7 @@ define(['namespace', 'backbone', 'config', 'utils', '../models/todo-list', './to
                     }
                 });
                 this.$list.prepend($container);
+                this.trigger('view:rendered');
                 return this;
             }
         });

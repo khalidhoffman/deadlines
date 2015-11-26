@@ -45,7 +45,7 @@ define(['backbone', 'namespace','config', 'utils', 'user', 'text!views/html/todo
                     body : this.$('.comment-input').val() || this.$('.comment-input').html(),
                     author : User.get('name'),
                     iconUrl : User.get('pic'),
-                    postTime : new Date()
+                    postTime : moment().toISOString()
                 };
                 this.model.save('comments', this.model.get('comments').concat([newComment]), {
                     success : function(){
@@ -137,7 +137,7 @@ define(['backbone', 'namespace','config', 'utils', 'user', 'text!views/html/todo
                     updatedDueDateString = this.timePicker.get('value')+" "+this.datePicker.get('value'),
                     updatedDueDate = moment(updatedDueDateString, 'h:mm A MMMM DD, YYYY');
                 this.model.save({
-                    dueDate: new Date(updatedDueDate.toDate()),
+                    dueDate: updatedDueDate.toISOString(),
                     name : this.$name.val()
                 }, {
                     success : function(model, response, options){

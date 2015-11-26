@@ -1,6 +1,16 @@
-define(['config', 'Toast', 'moment'], function (config, Toast, moment) {
+define([
+    'require',
+    'jquery',
+    'config',
+    'Toast',
+    'moment'
+], function (require) {
 
-    var pre = 'webkit'; // A wild guess. It ultimately probably won't matter
+    var $ = require('jquery'),
+        config =  require('config'),
+        Toast = require('Toast'),
+        moment = require('moment'),
+        pre = 'webkit'; // A wild guess. It ultimately probably won't matter
 
     if (window.getComputedStyle){
         var styles = window.getComputedStyle(document.documentElement, '');
@@ -91,6 +101,54 @@ define(['config', 'Toast', 'moment'], function (config, Toast, moment) {
             }
             else var expires = "";
             document.cookie = name+"="+value+expires+"; path=/";
+        },
+        /**
+         * returns a jquery wrapper of the appended stylesheet
+         * @param url
+         * @returns {*|jQuery|HTMLElement}
+         */
+        loadCss : function(url){
+            var $link = $(document.createElement('link'));
+            $link.attr({
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: url
+            });
+            $link.appendTo('head');
+            return $link;
+        },
+        /**
+         *
+         * @param $el {jQuery}
+         * @param options {object} - {duration, callback, context}
+         */
+        scrollTo : function($el, options){
+            var settings  = $.extend({
+                    duration : 600,
+                    offset : 2
+                }, options),
+                animateProperties = {
+                    duration: settings.duration
+                },
+                callback = settings.complete || settings.done;
+
+            if(callback){
+                animateProperties['complete'] = function(){
+                    callback.apply(options.context, options.arguments);
+                }
+            }
+            // 'html, body' necessary for browser compatibility
+            $('html, body').animate({
+                scrollTop: ($el.offset().top - $('.app-title').height() + settings.offset) // +2 for good measure
+            }, animateProperties);
+        },
+        /**
+         *
+         * @param $el
+         */
+        jumpTo : function($el){
+            var scrollTop = ($el.offset().top - $('header').height() +2);
+            $('html, body').scrollTop((scrollTop < 0)?0:scrollTop); // +2 for good measure
         }
     };
 });

@@ -12,11 +12,11 @@ define(['namespace', 'backbone', 'config', 'utils', './todo-item', 'domReady!'],
                 this.fetch({
                     success : function(collection, response, options){
                         self.trigger('initialized');
-                        self.on({
-                            "add" : this.saveToDB,
-                            "remove" : this.removeFromDB
-                        });
+                        self.isInitialized = true;
                     }
+                });
+                this.on('change:name change:dueDate', function(){
+                    this.sort();
                 });
                 return this;
             },

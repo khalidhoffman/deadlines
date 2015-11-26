@@ -20,10 +20,10 @@ define(['namespace', 'backbone', 'config', 'utils', 'moment', 'domReady!'],
             initialize: function(){
                 return this;
             },
-            getFormattedTime : function(){
+            getFormattedDueTime : function(){
                 return moment(this.get('dueDate')).format('h:mm A');
             },
-            getFormattedDate : function(){
+            getFormattedDueDay : function(){
                 return moment(this.get('dueDate')).format('MMM D, YYYY');
 
             }
