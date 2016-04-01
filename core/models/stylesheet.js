@@ -2,7 +2,7 @@ var path = require('path'),
 
     config = require('../../config'),
 
-    basePath = config.basePath;
+    assetsBasePath = config.assetsPath;
 
 /**
  *
@@ -12,7 +12,7 @@ var path = require('path'),
  */
 var CSS = function(href){
 
-    this.href = path.join(basePath, href);
+    this.href = path.join(assetsBasePath, href);
     return this;
 };
 

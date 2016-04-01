@@ -1,34 +1,40 @@
 var fs = require('fs'),
     path = require('path'),
-    
+
+    _ = require('lodash'),
+
     _config = (function () {
+        var localConfig = {},
+            localCredentials = {};
+        try {
+            localConfig = JSON.parse(fs.readFileSync(path.resolve('site-config.json')), {encoding: 'utf8'});
+        } catch (err) { console.error(err); }
+        try {
+            localCredentials = {
+                credentials: JSON.parse(fs.readFileSync(path.resolve('credentials.json')), {encoding: 'utf8'})
+            }
+        } catch (err) { console.error(err); }
         var data = {
-            https : false,
-            ports : {
-                "secure" : 5001,
-                "unsecure" : 5000
+            https: false,
+            ports: {
+                "secure": localConfig['ports']['secure'] || 5001,
+                "unsecure": process.env.PORT || localConfig['secure'] || 5000
             },
             credentials: {
                 "google": {
-                    "client_id": "google_api_console_content",
-                    "client_secret": "google_api_console_content"
+                    "client_id": process.env['google_client_id'] || "google_api_console_content",
+                    "client_secret": process.env['google_client_secret'] || "google_api_console_content"
                 },
                 "mongodb": {
-                    "address": "localhost",
-                    "username": "db_username",
-                    "password": "db_password"
+                    "address": process.env['mongodb_address'] || "localhost",
+                    "username": process.env['mongodb_username'] || "db_username",
+                    "password": process.env['mongodb_password'] || "db_password"
                 },
-                "privateKey": "/path/to/private/key",
-                "cert": "/path/to/certificate"
+                "privateKey": process.env['private_key_location'] || "/path/to/private/key",
+                "cert": process.env['cert_location'] || "/path/to/certificate"
             }
         };
-        try {
-            data = JSON.parse(fs.readFileSync(path.resolve('site-config.json')), {encoding: 'utf8'});
-            data.credentials = JSON.parse(fs.readFileSync(path.resolve('credentials.json')), {encoding: 'utf8'});
-        } catch (err){
-            console.error(err);
-        }
-        return data;
+        return _.merge(data, localCredentials, localConfig);
     })(),
     isDevMode = require('os').hostname().toLowerCase().indexOf('kah') > -1,
     hostnames = {
@@ -41,7 +47,7 @@ module.exports = {
     https: _config.https,
     hostname: (isDevMode) ? hostnames['development'] : hostnames['production'],
     hostnames: hostnames,
-    basePath: '/deadlines',
+    assetsPath: '/deadlines',
     isDevMode: isDevMode,
     ports: {
         secure: process.env.PORT || _config.ports.secure,
