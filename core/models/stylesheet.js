@@ -1,14 +1,18 @@
-var basePath = require('../utils.js').basePath;
+var path = require('path'),
+
+    config = require('../../config'),
+
+    basePath = config.basePath;
 
 /**
  *
- * @param href
+ * @param {String} href
  * @returns {CSS}
  * @constructor
  */
 var CSS = function(href){
 
-    this.href = basePath + href || 'http://localhost'; // get host url;
+    this.href = path.join(basePath, href);
     return this;
 };
 

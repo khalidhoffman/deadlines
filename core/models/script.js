@@ -1,15 +1,23 @@
-var basePath = require('../utils.js').basePath;
+var path = require('path'),
+
+    config = require('../../config'),
+    
+    basePath = config.basePath;
 
 /**
- *
- * @param passedArgs {{src: (*|function()|string|string), type: (*|string), placement: {header: boolean, footer: boolean}}}
- * @returns {{src: (*|function()|string|string), type: (*|string), placement: {header: boolean, footer: boolean}}}
+ * @param {Object} [passedArgs]
+ * @param {function|string} [passedArgs.src]
+ * @param {string} [passedArgs.placement]
+ * @param {Boolean} [passedArgs.placement.header]
+ * @param {Boolean} [passedArgs.placement.footer]
+ * @param {string} [passedArgs.type]
+ * @returns {{src: (string), type: (string), placement: {header: boolean, footer: boolean}}}
  * @constructor
  */
 module.exports = function(passedArgs){
     var args = passedArgs || {};
     return {
-        src: basePath + args.src || 'https://localhost', // get host url
+        src: path.join(basePath, args.src),
         type: args.type || 'text/javascript',
         placement: {
             header : (args.isHeader)?args.isHeader:true,

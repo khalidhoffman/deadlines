@@ -1,25 +1,37 @@
-var https = require("https"),
-    portNumber = require('../config').ports.secure,
-    _ = require('lodash'),
+var https = require('https'),
+    http = require("http"),
     fs = require('fs'),
+    path = require('path'),
     url = require('url'),
-    utils = require('./utils'),
-    crypto = require('crypto'),
+    util = require('util'),
+    cookie = require('cookie'),
+    cookieIdString = '__deadlines_Id',
     querystring = require('querystring'),
+
+    _ = require('lodash'),
     mime = require('mime'),
+
+    config = require('../config'),
     mongoose = require('./mongodb/mongoose'),
     htmlBuilder = require("./html-builder"),
-    users = [],
-    hostname = require('../config').hostname,
-    devRegex = /kah/,
+    utils = require('./utils'),
+
     scriptRegex = /\.(js)$/,
     imageRegex = /\.(jpg|jpeg|png|gif|svg)$/,
     htmlRegex = /\.(html)$/,
     baseRegex = /^\/deadlines/,
-    isDevelopment = devRegex.test(require('os').hostname().toLowerCase()), fileTypeRegex = /\.(\w+)$/,
-    mongoDB = mongoose.connect(isDevelopment);
+    portNumber = (config.https) ? config.ports.secure : config.ports.unsecure,
+    googleAuthRedirectURI = util.format(
+        '%s://%s:%s/%s',
+        (config.https) ? 'https' : 'http',
+        (config.isDevMode) ? config.hostnames.development : config.hostnames.production,
+        (config.isDevMode) ? portNumber : '80',
+        (config.isDevMode) ? '' : "/deadlines"
+    ),
+    fileTypeRegex = /\.(\w+)$/,
+    mongoDB = mongoose.connect();
 
-function forwardGoogleCredentials(request, response) {
+function handleGoogleCredentials(request, response) {
     var path = String(request.url),
         pathObj = url.parse(path, true);
 
@@ -27,9 +39,9 @@ function forwardGoogleCredentials(request, response) {
     //console.log('pathObj: ', pathObj);
     var postData = querystring.stringify({
         'code': pathObj.query['code'],
-        'client_id': '***REMOVED***',
-        'client_secret': '***REMOVED***',
-        'redirect_uri': 'https://'+hostname+':'+portNumber+'/deadlines',
+        'client_id': config.credentials.google.client_id,
+        'client_secret': config.credentials.google.client_secret,
+        'redirect_uri': googleAuthRedirectURI,
         'grant_type': 'authorization_code'
     });
 
@@ -44,12 +56,10 @@ function forwardGoogleCredentials(request, response) {
     };
 
     var req = https.request(apiRequestOptions, function (res) {
-        //console.log('STATUS: ' + res.statusCode);
-        //console.log('HEADERS: ' + JSON.stringify(res.headers));
+
         res.setEncoding('utf8');
         var data = '';
         res.on('data', function (chunk) {
-            //console.log('BODY: ' + chunk);
             data += chunk;
         });
         res.on('end', function (chunk) {
@@ -57,20 +67,38 @@ function forwardGoogleCredentials(request, response) {
             if (parsedData['access_token']) {
 
                 console.log('login success!');
-                //var id = 'user'+users.length;
                 //console.log('pathObj: ', pathObj);
-                //console.log('api-request.data: ', data);
-                var id = pathObj.query['state'],
-                    userHash = crypto.createHash('md5').digest('hex');
-                //users[id] = parsedData['access_token'];
-                //console.log('users: ', users);
-                response.writeHead(302, {
-                    "Content-Type": "text/html",
-                    'ETag': userHash,
-                    'Via' : path,
-                    'Location': 'https://'+hostname+':'+portNumber+'/deadlines'
-                });
-                response.end();
+                console.log('api-request.data: ', pathObj, parsedData);
+                var id = require('crypto').createHash('md5').update(pathObj.query['code']).digest('hex');
+                mongoDB.schemas.User.findOneAndUpdate({
+                        'id': id
+                    },
+                    {
+                        token: parsedData['access_token']
+                    },
+                    {
+                        upsert: true
+                    }, function (err) {
+                        if (err) {
+                            console.error('Failed to save user credentials:', err);
+                            console.warn('no access_token received: ', data);
+                            response.writeHead(204);
+                            response.end();
+                        } else {
+                            console.log('Saved user credentials');
+                            var tomorrow = new Date();
+                            tomorrow.setDate(tomorrow.getDate() + 1);
+                            response.writeHead(302, {
+                                "Content-Type": "text/html",
+                                'Set-Cookie': cookie.serialize(cookieIdString, id, {
+                                    maxAge: 60 * 60 * 24,
+                                    expires: tomorrow
+                                }),
+                                'Location': googleAuthRedirectURI
+                            });
+                            response.end();
+                        }
+                    });
             } else {
                 console.warn('no access_token received: ', data);
                 response.writeHead(204);
@@ -88,71 +116,64 @@ function forwardGoogleCredentials(request, response) {
     req.end();
 }
 
-function handlePageRequest(request , response, id) {
-    var path = String(request.url),
-        id = id || false;
-    if (request.headers['referer']) {
-        var refererURL = url.parse(request.headers['referer'], true);
-        //console.log('refererURL: ', refererURL);
-        if (refererURL.query['continue']) {
-            var refererContinuePath = url.parse(refererURL.query['continue'], true);
-            id = refererContinuePath.query['state'];
-            //console.log('refererContinuePath: ', refererContinuePath);
+function handlePageRequest(request, response) {
+    var id = false;
+
+
+    var idCookie = (request.headers['cookie']) ? cookie.parse(request.headers['cookie'])[cookieIdString] : false;
+    if (idCookie) {
+        id = idCookie;
+    }
+
+    //console.log('handlePageRequest: %s', url.parse(path, true));
+    mongoDB.schemas.User.find({
+        'id': id
+    }, function (err, users) {
+        if (err) {
+            console.error(err);
         }
-    }
-
-    if(request.headers['etag']){
-        console.log("request.headers['etag']: ", request.headers['etag']);
-    }
-
-    if(request.headers['via']){
-        console.log("request.headers['via']:", request.headers['via']);
-    }
-    //if(request.headers['ETag']){
-    //    console.log('user '+request.headers['ETag']+' requested login');
-    //}
-    //console.log('handlePageRequest: ', url.parse(path, true));
-    if (id && users[id]) {
-        console.log('user ' + id + ' requested login with credentials ', users[id]);
-        //console.log('request.url: ' + path);
-        https.get({
-            hostname: 'www.googleapis.com',
-            path: '/userinfo/v2/me',
-            headers: {
-                'Content-length': 0,
-                'Authorization': 'Bearer ' + users[id]
-            }
-        }, function (res) {
-            var data = '';
-            res.on('data', function (incomingData) {
-                data += incomingData;
-            });
-
-            res.on('end', function () {
-                var credentials = JSON.parse(data);
-                console.log('credentials: ', credentials);
-                response.writeHead(200, {
-                    "Content-Type": "text/html"
+        if (users && users.length > 0) {
+            console.log('user key: ', users[0]);
+            https.get({
+                hostname: 'www.googleapis.com',
+                path: '/userinfo/v2/me',
+                headers: {
+                    'Content-length': 0,
+                    'Authorization': 'Bearer ' + users[0].token
+                }
+            }, function (res) {
+                var data = '';
+                res.on('data', function (incomingData) {
+                    data += incomingData;
                 });
-                response.write(htmlBuilder.compile('page.js', credentials));
-                response.end();
+
+                res.on('end', function () {
+                    var credentials = JSON.parse(data);
+                    //console.log('credentials: ', credentials);
+                    response.writeHead(200, {
+                        "Content-Type": "text/html"
+                    });
+                    response.write(htmlBuilder.compile('page.js', credentials));
+                    response.end();
+                });
+
+            }).on('error', function (e) {
+                console.error('failed to get api: ', e);
             });
 
-        }).on('error', function (e) {
-            console.error('failed to get api: ', e);
-        });
+        } else {
+            //console.log('request.url: ' + path + ' without id');
+            response.writeHead(200, {
+                "Content-Type": "text/html"
+            });
+            response.write(htmlBuilder.compile('page.js'));
+            response.end();
+        }
+    });
 
-    } else {
-        console.log('request.url: ' + path + ' without id');
-        response.writeHead(200, {
-            "Content-Type": "text/html"
-        });
-        response.write(htmlBuilder.compile('page.js'));
-        response.end();
-    }
 }
 
-function handleFileRequest(request, response){
+function handleFileRequest(request, response) {
     var path = String(request.url),
         imageRegexResults = imageRegex.exec(path),
         scriptRegexResults = scriptRegex.exec(path),
@@ -161,7 +182,7 @@ function handleFileRequest(request, response){
 
     // send collection json
     if (fileTypeRegexResults) {
-        //console.log('fileTypeRegex: ', fileTypeRegexResults);
+        //console.log('fileTypeRegex: %s', fileTypeRegexResults);
         var correctedPath = fileTypeRegexResults['input'].replace(baseRegex, "./public");
         response.writeHead(200, {
             "Content-Type": mime.lookup(correctedPath)
@@ -189,27 +210,27 @@ function handleFileRequest(request, response){
     }
 }
 
-function handleDataRequest(request, response){
-    console.log('request - '+request.url+':', request.method);
+function handleDataRequest(request, response) {
+    console.log('request - ' + request.url + ':', request.method);
     var pathDecipherRegex = /\/(\w+)\/(\w+)/,
         pathObj = url.parse(request.url),
         pathArgs = pathDecipherRegex.exec(pathObj.path),
-        id = (pathArgs)? pathArgs[2]:-1;
+        id = (pathArgs) ? pathArgs[2] : -1;
     switch (request.method) {
         case 'DELETE':
             console.log('Removing id: ', id);
             mongoDB.schemas.Task.remove({
-                '_id' : id
+                '_id': id
             }, function (err) {
                 //response.end('Successfully removed task');
-                console.log((err)?'(end) Failed remove op:':'(end) remove op');
-                response.writeHead((err)?409:204);
+                console.log((err) ? '(end) Failed remove op:' : '(end) remove op');
+                response.writeHead((err) ? 409 : 204);
                 response.end();
             });
             break;
         case 'POST':
             utils.getDataFromRequest(request, function (err, taskData) {
-                if (err || taskData == null){
+                if (err || taskData == null) {
                     console.error(err);
                     response.writeHead(409);
                     response.end();
@@ -225,32 +246,32 @@ function handleDataRequest(request, response){
                     }
                 );
 
-                task.save( function (err) {
-                        //response.end('Successfully updated task');
-                        //response.end();
+                task.save(function (err) {
+                    //response.end('Successfully updated task');
+                    //response.end();
 
                     response.writeHead(200, {"Content-Type": "application/json"});
                     response.write(JSON.stringify(task));
                     response.end();
 
-                        if (err) {
-                            console.log('(end) FAILED update op:', err);
-                        } else {
-                            console.log('(end) update op');
-                        }
-                    });
+                    if (err) {
+                        console.error('(end) FAILED update op:', err);
+                    } else {
+                        console.log('(end) update op');
+                    }
+                });
 
             });
             break;
         case 'PUT':
             utils.getDataFromRequest(request, function (err, taskData) {
-                if (err || taskData == null){
+                if (err || taskData == null) {
                     response.writeHead(409);
                     response.end();
                     return;
                 }
 
-                console.log('updating: ', taskData);
+                console.log('updating: ', taskData['_id']);
                 mongoDB.schemas.Task.findOneAndUpdate(
                     {
                         '_id': taskData['_id']
@@ -299,17 +320,15 @@ function handleDataRequest(request, response){
     }
 }
 
-function handleLoginRequest(request, response){
+function handleLoginRequest(request, response) {
     var path = String(request.url),
         googleLoginURI = '',
         googleLoginURIBase = 'https://accounts.google.com/o/oauth2/auth',
-        id = 'user' + users.length,
         googleLoginParams = {
             'response_type': 'code',
-            'redirect_uri': 'https://'+hostname+':'+portNumber+'/deadlines',
-            'client_id': '***REMOVED***',
-            'scope': 'https://www.googleapis.com/auth/plus.login',
-            'state': id
+            'redirect_uri': googleAuthRedirectURI,
+            'client_id': config.credentials.google.client_id,
+            'scope': 'https://www.googleapis.com/auth/plus.login'
         },
         paramIndex = 0;
 
@@ -332,40 +351,43 @@ function handleLoginRequest(request, response){
     response.end();
 }
 
-var server = https.createServer({
-    key : fs.readFileSync('./keys/key.pem'),
-    cert : fs.readFileSync('./keys/cert.pem'),
-    ciphers: 'AESGCM'
-},
-    function (request, response) {
+function handleRequest(request, response) {
     var path = String(request.url),
         pathObj = url.parse(path, true);
-    response.setHeader('Access-Control-Allow-Origin', 'https://'+hostname+':'+portNumber);
+    response.setHeader('Access-Control-Allow-Origin', googleAuthRedirectURI);
 
     switch (pathObj.pathname) {
-        case '/deadlines':
-            //console.log('[/deadlines]request.url: ', pathObj);
-            //console.log('[/deadlines]request.headers: ', request.headers);
-
+        case '/login':
+        case '/login/':
+            handleLoginRequest(request, response);
+            break;
+        case '/tasklist':
+        case '/tasklist/':
+            handleDataRequest(request, response);
+            break;
+        case '/':
             if (pathObj.query['code']) {
-                forwardGoogleCredentials(request, response);
+                handleGoogleCredentials(request, response);
             } else {
                 handlePageRequest(request, response);
             }
-            break;
-        case '/login':
-            handleLoginRequest(request,response);
-            break;
-        case '/tasklist':
-            handleDataRequest(request,response);
             break;
         default :
             handleFileRequest(request, response);
             break;
     }
+}
 
+var unsecureServer = http.createServer(handleRequest),
+    secureServer = https.createServer({
+            key: fs.readFileSync(path.resolve(config.credentials.privateKey)),
+            cert: fs.readFileSync(path.resolve(config.credentials.cert)),
+            ciphers: 'AESGCM'
+        },
+        handleRequest);
 
-});
-server.portNumber = portNumber;
-module.exports = server;
+module.exports = {
+    http: unsecureServer,
+    https: secureServer
+};
 

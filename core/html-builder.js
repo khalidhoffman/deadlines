@@ -1,5 +1,8 @@
-var _ = require('lodash'),
-    config = require('../config');
+var path = require('path'),
+
+    _ = require('lodash'),
+
+    content = require('./content');
 
 module.exports = {
     /**
@@ -10,25 +13,19 @@ module.exports = {
      */
     compile: function (pagePath, pageData) {
 
-        var Page = require('./views/' + (pagePath || "page")),
-            data = {
-                title: 'Deadlines',
-                stylesheets: config.stylesheetList,
-                scripts: config.scriptsList
-            };
+        var Page = require(path.resolve(__dirname, 'views/', (pagePath || "page")));
 
-        if (pageData) {
-            _.extend(data, pageData);
-        }
+        var data = _.defaults(pageData, {
+            title: 'Deadlines',
+            stylesheets: content.stylesheetList,
+            scripts: content.scriptsList
+        });
 
-        generatedPage = new Page(data);
+        var generatedPage = new Page(data);
 
-        //console.log('newPage: ', newPageData);
         var compiler = _.template(generatedPage.html);
-        //console.log('compiling...');
 
         var compiledHTML = compiler(generatedPage);
-        //console.log('compiledHTML: ', compiledHTML);
 
         return compiledHTML;
     }

@@ -1,16 +1,20 @@
 var fs = require('fs'),
+    path = require('path'),
+
     PageView = function(dataArgs){
         var pageData = require('../models/page.js')(dataArgs);
+        
         //console.log('footer.pageData: ', pageData);
+        
         return {
             _ : require('lodash'),
             data : pageData,
-            html : fs.readFileSync(__dirname + '/html/page.html').toString(),
+            html : fs.readFileSync(path.resolve(__dirname, 'html/page.html'), {encoding: 'utf8'}),
             views : {
-                header : require('../views/header.js')({
+                header : require('./header.js')({
                     data : pageData
                 }),
-                footer : require('../views/footer.js')({
+                footer : require('./footer.js')({
                     data : pageData,
                     credentials : {
                         name : pageData.name || 'User',

@@ -1,22 +1,20 @@
 var _ = require('lodash');
 
-var Page = function(passedArgs){
+var Page = function (passedArgs) {
     //console.log('passedArgs: ', passedArgs);
-    var self = {};
-    _.extend(self, {
-        title : 'Title',
+    var defaults = {
+        title: 'Title',
         charset: 'utf-8',
-        url : 'https://localhost', // get host url
-        favicon : 'deadlines/favicon.ico',
-        body : {
-            className : 'bodyclass'
+        url: 'https://localhost', // get host url
+        favicon: '//deadlines/favicon.ico',
+        body: {
+            className: 'bodyclass'
         },
-        scripts : [],
-        stylesheets : []
-    });
+        scripts: [],
+        stylesheets: []
+    };
 
-    _.assign(self, passedArgs);
-    return self;
+    return _.defaults(passedArgs, defaults);
 };
 
 module.exports = Page;

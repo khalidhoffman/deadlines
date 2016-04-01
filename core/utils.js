@@ -1,5 +1,3 @@
-var querystring = require('querystring');
-
 module.exports = {
     basePath : '/deadlines',
     /**

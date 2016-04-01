@@ -1,20 +1,28 @@
-var Task = null,
-    User = null,
-    crendentials = require('./credentials');
+var util = require('util'),
+
+    mongoose = require('mongoose'),
+    _ = require('lodash'),
+
+    config = require('../../config'),
+
+    dbIdentity = config.credentials.mongodb,
+    Task = null,
+    User = null;
 
 /**
  *
- * @param isDev
+ * @param {Object} options
+ * @param {Boolean} options.isDev
  */
-module.exports.connect = function(isDev){
-    var mongoose = require('mongoose'),
-        isDevelopment = isDev || require('os').hostname().toLowerCase().indexOf('kah')>-1;
-
-    var username = crendentials.username,
-        password = crendentials.password;
+module.exports.connect = function (options) {
+    var _options = _.extend({}, options),
+        isDevelopment = _options.isDev || config.isDevMode,
+        address = dbIdentity.address,
+        username = dbIdentity.username,
+        password = dbIdentity.password;
 
     console.log('connecting to mongodb');
-    mongoose.connect('mongodb://'+username+':'+password+'@***REMOVED***');
+    mongoose.connect(util.format('mongodb://%s:%s@%s', username, password, address));
 
     var db = mongoose.connection;
 
@@ -24,22 +32,22 @@ module.exports.connect = function(isDev){
         console.log('successfully connected.');
     });
 
-    var TaskSchema = new mongoose.Schema( require('./schemas/task'));
-    var UserSchema = new mongoose.Schema( require('./schemas/user'));
+    var TaskSchema = new mongoose.Schema(require('./schemas/task'));
+    var UserSchema = new mongoose.Schema(require('./schemas/user'));
 
-    if (isDevelopment){
+    if (isDevelopment) {
         console.log('Running in dev mode.');
         Task = mongoose.model('Task', TaskSchema, 'Deadlines_Development');
         User = mongoose.model('User', UserSchema, 'Deadlines_Users_Development');
-    } else{
+    } else {
         Task = mongoose.model('Task', TaskSchema, 'Deadlines');
         User = mongoose.model('User', UserSchema, 'Deadlines_Users');
-    };
+    }
 
     return {
-        schemas : {
-            Task : Task,
-            User : User
+        schemas: {
+            Task: Task,
+            User: User
         }
     }
 

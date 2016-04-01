@@ -1,9 +1,12 @@
-var _ =require('lodash'),
+var path = require('path'),
     fs = require('fs'),
-    compiler = _.template(fs.readFileSync(__dirname + '/html/footer.html').toString());
 
-module.exports = function(data){
+    _ = require('lodash'),
+
+    compiler = _.template(fs.readFileSync(path.resolve(__dirname, 'html/footer.html'), {encoding: 'utf8'}));
+
+module.exports = function (compilerData) {
     return {
-        innerHTML : compiler(data)
+        innerHTML: compiler(compilerData)
     };
 }

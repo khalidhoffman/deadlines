@@ -1,14 +1,13 @@
-
 //var secureServer = require('./core/server-https');
-var unsecureServer = require('./core/server-http'),
+var server = require('./core/server'),
+    secureServer = server.https,
+    unsecureServer = server.http,
     config = require('./config.js');
 
-
+secureServer.listen(config.ports.secure);
 unsecureServer.listen(config.ports.unsecure);
-//secureServer.listen(config.ports.unsecure);
 
-//var secureAddress = secureServer.address();
-var unsecureAddress = unsecureServer.address();
+var unsecureAddress = unsecureServer.address() || 'n/a',
+    secureAddress = secureServer.address() || 'n/a';
 
-//console.log("http server is listening on "+unsecureAddress.address+":"+unsecureAddress.port);
-//console.log("https server is listening on "+secureAddress.address+":"+secureAddress.port);
+console.log("server is listening on https://%s:%s & http://%s:%s", secureAddress.address, secureAddress.port, unsecureAddress.address, unsecureAddress.port);
